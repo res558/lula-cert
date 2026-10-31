@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Certificado Exercito do Lula!</title>
+<title>Certificado</title>
 <script>
   // ===== CONFIG: ajuste aqui =====
   // X e Y são frações da imagem (0 = esquerda/topo, 1 = direita/base). 0.5 = centro.
@@ -18,6 +18,14 @@
   const MAX_TEXT_WIDTH = 0.80; // texto nunca passa de 80% da largura da imagem (reduz a fonte se precisar)
   const DOWNLOAD_NAME = "certificado.png";
   const RESTORE_PANEL_AFTER_SAVE = true; // false = painel fica escondido depois de salvar
+
+  // Estrelas do fundo
+  const STAR_COUNT = 15;
+  const STAR_MIN_SIZE = 200;      // px
+  const STAR_MAX_SIZE = 450;      // px
+  const STAR_MIN_OPACITY = 0.10;  // 90% de transparência
+  const STAR_MAX_OPACITY = 0.40;  // 60% de transparência
+  const STAR_COLOR = "#FFD700";
 </script>
 <style>
   html, body {
@@ -27,7 +35,20 @@
     background: #ff0000;
     font-family: Arial, sans-serif;
   }
+  #stars {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .star {
+    position: absolute;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  }
   #stage {
+    position: relative;
+    z-index: 1;
     width: 100%;
     height: 100vh;
     height: 100dvh;
@@ -107,6 +128,7 @@
 </style>
 </head>
 <body>
+<div id="stars"></div>
 <div id="stage">
   <div id="wrap">
     <img id="cert" alt="Certificado">
@@ -138,6 +160,51 @@
   const measureCtx = document.createElement("canvas").getContext("2d");
 
   nameInput.maxLength = MAX_CHARS;
+
+  // Gera estrelas douradas no fundo: a tela é dividida numa grade,
+  // uma estrela por célula, posição aleatória dentro da célula => sem sobreposição e bem distribuídas
+  function makeStars() {
+    const layer = document.getElementById("stars");
+    layer.innerHTML = "";
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const cols = Math.max(1, Math.round(Math.sqrt(STAR_COUNT * W / H)));
+    const rows = Math.max(1, Math.ceil(STAR_COUNT / cols));
+    const cellW = W / cols;
+    const cellH = H / rows;
+    const maxFit = Math.min(cellW, cellH) * 0.95; // estrela nunca sai da própria célula
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const wanted = STAR_MIN_SIZE + Math.random() * (STAR_MAX_SIZE - STAR_MIN_SIZE);
+        const size = Math.min(wanted, maxFit);
+        const cx = c * cellW + size / 2 + Math.random() * (cellW - size);
+        const cy = r * cellH + size / 2 + Math.random() * (cellH - size);
+
+        const s = document.createElement("div");
+        s.className = "star";
+        s.style.width = size + "px";
+        s.style.height = size + "px";
+        s.style.left = cx + "px";
+        s.style.top = cy + "px";
+        s.style.background = STAR_COLOR;
+        s.style.opacity = STAR_MIN_OPACITY + Math.random() * (STAR_MAX_OPACITY - STAR_MIN_OPACITY);
+        s.style.transform = "translate(-50%, -50%) rotate(" + (Math.random() * 72) + "deg)";
+        layer.appendChild(s);
+      }
+    }
+  }
+  makeStars();
+
+  // Refaz as estrelas quando a tela muda de tamanho (ou o celular gira)
+  let starTimer;
+  let lastW = window.innerWidth;
+  window.addEventListener("resize", () => {
+    if (window.innerWidth === lastW) return; // ignora a barra do navegador no celular aparecendo/sumindo
+    lastW = window.innerWidth;
+    clearTimeout(starTimer);
+    starTimer = setTimeout(makeStars, 200);
+  });
 
   let current = 1;
   let appliedText = "";
