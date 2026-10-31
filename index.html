@@ -9,8 +9,9 @@
   // X e Y são frações da imagem (0 = esquerda/topo, 1 = direita/base). 0.5 = centro.
   // FONT_SIZE é fração da LARGURA da imagem (0.04 = 4% da largura).
   const IMAGES = {
-    1: { src: "imagem1.png", X: 0.50, Y: 0.355, FONT_SIZE: 0.035, COLOR: "#1a1a1a" },
-    2: { src: "imagem2.png", X: 0.50, Y: 0.585, FONT_SIZE: 0.040, COLOR: "#1a1a1a" }
+    1: { src: "certificado1.webp", X: 0.50, Y: 0.33, FONT_SIZE: 0.028, COLOR: "#1a1a1a" },
+    2: { src: "certificado2.webp", X: 0.50, Y: 0.585, FONT_SIZE: 0.040, COLOR: "#1a1a1a" },
+    3: { src: "certificado3.png", X: 0.50, Y: 0.530, FONT_SIZE: 0.040, COLOR: "#1a1a1a" }
   };
   const FONT_FAMILY = "Georgia, 'Times New Roman', serif";
   const MAX_CHARS = 60;
@@ -53,7 +54,7 @@
   }
   #panel {
     position: absolute;
-    top: 50%;
+    top: 80%;
     left: 50%;
     transform: translate(-50%, -50%);
     background: #ffffff;
@@ -88,6 +89,7 @@
       <div class="row">
         <button id="btn1">1</button>
         <button id="btn2">2</button>
+        <button id="btn3">3</button>
       </div>
       <label for="nameInput">Escreva aqui nome</label>
       <div class="row">
@@ -133,6 +135,7 @@
 
   document.getElementById("btn1").addEventListener("click", () => loadImage(1));
   document.getElementById("btn2").addEventListener("click", () => loadImage(2));
+  document.getElementById("btn3").addEventListener("click", () => loadImage(3));
 
   applyBtn.addEventListener("click", () => {
     appliedText = nameInput.value.slice(0, MAX_CHARS);
