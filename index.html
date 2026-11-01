@@ -167,7 +167,7 @@
         <input type="text" id="nameInput">
         <button id="applyBtn">Aplicar</button>
       </div>
-      <button id="saveBtn" disabled>Salvar imagem</button>
+      <button data-goatcounter-click="salvar-imagem" id="saveBtn" disabled>Salvar imagem</button>
 	  <br/>
 	  <a id="feedback" href="https://github.com/res558/lula-cert/issues" target="_blank" rel="noopener">Sugestões e pedidos aqui</a>
     </div>
@@ -331,6 +331,7 @@
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 2000);
         if (RESTORE_PANEL_AFTER_SAVE) panel.style.display = "block";
+        window.goatcounter?.count({ path: 'download-ok-cert' + current, title: 'Download cert ' + current, event: true });
       }, "image/png");
     } catch (e) {
       alert("Não foi possível salvar. Abra a página por um servidor (http://), não por file://.");
@@ -346,5 +347,6 @@
   });
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "53454a8cc160406a8d9a2b1d65461457"}'></script><!-- End Cloudflare Web Analytics -->
+<script data-goatcounter="https://res558.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
