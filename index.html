@@ -191,8 +191,7 @@
       </div>
       <label for="nameInput">Escreva aqui seu nome</label>
       <div class="row">
-        <input type="text" id="nameInput">
-        <button id="applyBtn">Aplicar</button>
+        <input type="text" id="nameInput" autocomplete="name" enterkeyhint="done">
       </div>
       <button data-goatcounter-click="salvar-imagem" id="saveBtn" disabled>Salvar imagem</button>
 	  <br/>
@@ -207,7 +206,6 @@
   const signText = document.getElementById("signText");
   const panel = document.getElementById("panel");
   const nameInput = document.getElementById("nameInput");
-  const applyBtn = document.getElementById("applyBtn");
   const saveBtn = document.getElementById("saveBtn");
   const measureCtx = document.createElement("canvas").getContext("2d");
 
@@ -317,13 +315,16 @@
   document.getElementById("btn2").addEventListener("click", () => loadImage(2));
   document.getElementById("btn3").addEventListener("click", () => loadImage(3));
 
-  applyBtn.addEventListener("click", () => {
+  // O nome vai para o certificado enquanto a pessoa digita
+  function applyName() {
     appliedText = nameInput.value.slice(0, MAX_CHARS);
     nameText.textContent = appliedText;
     positionText();
     saveBtn.disabled = appliedText.trim() === "";
-    nameInput.blur(); // fecha o teclado no celular
-  });
+  }
+  nameInput.addEventListener("input", applyName);
+  // Enter / "OK" no celular: fecha o teclado
+  nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") nameInput.blur(); });
 
   saveBtn.addEventListener("click", async () => {
     panel.style.display = "none";
@@ -396,6 +397,7 @@
   // Start: load image 1, show panel only after everything is loaded
   window.addEventListener("load", () => {
     loadImage(1);
+    applyName(); // caso o navegador tenha preenchido o campo sozinho (ex.: botão Voltar)
     if (img.complete) { positionText(); panel.style.display = "block"; }
     else img.addEventListener("load", () => { panel.style.display = "block"; }, { once: true });
   });
