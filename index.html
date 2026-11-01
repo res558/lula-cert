@@ -4,13 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Certificado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mrs+Saint+Delafield&display=swap" rel="stylesheet">
 <script>
   // ===== CONFIG: ajuste aqui =====
   // X e Y são frações da imagem (0 = esquerda/topo, 1 = direita/base). 0.5 = centro.
   // FONT_SIZE é fração da LARGURA da imagem (0.04 = 4% da largura).
+  // SIGNATURE (opcional): assinatura com o mesmo nome, em fonte cursiva. Só quem tiver SIGNATURE ganha assinatura.
+  // MAX_WIDTH da assinatura: largura máxima (fração da imagem) — reduz a fonte se o nome for longo.
+  const SIGNATURE_FONT = "'Mrs Saint Delafield', cursive";
+
   const IMAGES = {
     1: { src: "certificado1.webp", X: 0.50, Y: 0.33, FONT_SIZE: 0.028, COLOR: "#1a1a1a" },
-    2: { src: "certificado2.webp", X: 0.50, Y: 0.585, FONT_SIZE: 0.040, COLOR: "#1a1a1a" },
+    2: { src: "certificado2.webp", X: 0.50, Y: 0.585, FONT_SIZE: 0.040, COLOR: "#1a1a1a",
+         SIGNATURE: { X: 0.50, Y: 0.895, FONT_SIZE: 0.050, COLOR: "#1f3a93", MAX_WIDTH: 0.24 } },
     3: { src: "certificado3.png", X: 0.50, Y: 0.530, FONT_SIZE: 0.040, COLOR: "#1a1a1a" }
   };
   const FONT_FAMILY = "Georgia, 'Times New Roman', serif";
@@ -35,7 +43,19 @@
     background: #ff0000;
     font-family: Arial, sans-serif;
   }
-  #stars {
+  #feedback {
+    z-index: 2;
+    color: #000000;
+    font-size: 10px;
+    text-decoration: none;
+    white-space: nowrap;
+	bottom: 0;
+	position: fixed;
+	left: 0;
+	right: 0;
+  }
+  #feedback:hover { color: #ff0000; }
+  #stars { 	
     position: fixed;
     inset: 0;
     z-index: 0;
@@ -69,13 +89,14 @@
     width: auto;
     height: auto;
   }
-  #nameText {
+  #nameText, #signText {
     position: absolute;
     transform: translate(-50%, -50%);
     white-space: nowrap;
     line-height: 1;
     pointer-events: none;
   }
+  #signText { display: none; }
   #panel {
     position: absolute;
     top: 80%;
@@ -133,6 +154,7 @@
   <div id="wrap">
     <img id="cert" alt="Certificado">
     <div id="nameText"></div>
+    <div id="signText"></div>
     <div id="panel">
       <h2>Escolha seu certificado</h2>
       <div class="row">
@@ -146,6 +168,8 @@
         <button id="applyBtn">Aplicar</button>
       </div>
       <button id="saveBtn" disabled>Salvar imagem</button>
+	  <br/>
+	  <a id="feedback" href="https://github.com/res558/lula-cert/issues" target="_blank" rel="noopener">Sugestões e pedidos aqui</a>
     </div>
   </div>
 </div>
@@ -153,6 +177,7 @@
 <script>
   const img = document.getElementById("cert");
   const nameText = document.getElementById("nameText");
+  const signText = document.getElementById("signText");
   const panel = document.getElementById("panel");
   const nameInput = document.getElementById("nameInput");
   const applyBtn = document.getElementById("applyBtn");
@@ -210,22 +235,45 @@
   let appliedText = "";
 
   // Reduz a fonte se o texto ficar mais largo que maxWidth
-  function fittedSize(text, baseSize, maxWidth) {
-    measureCtx.font = baseSize + "px " + FONT_FAMILY;
+  function fittedSize(text, baseSize, maxWidth, family) {
+    measureCtx.font = baseSize + "px " + family;
     const textWidth = measureCtx.measureText(text).width;
     return textWidth > maxWidth ? baseSize * maxWidth / textWidth : baseSize;
+  }
+
+  // Posiciona um texto HTML sobre a imagem
+  function placeText(el, spec, family, maxWidthFrac, w, h) {
+    const size = fittedSize(appliedText, spec.FONT_SIZE * w, maxWidthFrac * w, family);
+    el.style.left = (spec.X * w) + "px";
+    el.style.top = (spec.Y * h) + "px";
+    el.style.fontSize = size + "px";
+    el.style.fontFamily = family;
+    el.style.color = spec.COLOR;
+  }
+
+  // Desenha um texto no canvas (imagem final)
+  function drawText(ctx, spec, family, maxWidthFrac, w, h) {
+    const size = fittedSize(appliedText, spec.FONT_SIZE * w, maxWidthFrac * w, family);
+    ctx.font = size + "px " + family;
+    ctx.fillStyle = spec.COLOR;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(appliedText, spec.X * w, spec.Y * h);
   }
 
   function positionText() {
     const cfg = IMAGES[current];
     const w = img.clientWidth;
     const h = img.clientHeight;
-    const size = fittedSize(appliedText, cfg.FONT_SIZE * w, MAX_TEXT_WIDTH * w);
-    nameText.style.left = (cfg.X * w) + "px";
-    nameText.style.top = (cfg.Y * h) + "px";
-    nameText.style.fontSize = size + "px";
-    nameText.style.fontFamily = FONT_FAMILY;
-    nameText.style.color = cfg.COLOR;
+    placeText(nameText, cfg, FONT_FAMILY, MAX_TEXT_WIDTH, w, h);
+
+    if (cfg.SIGNATURE) {
+      signText.textContent = appliedText;
+      signText.style.display = "block";
+      placeText(signText, cfg.SIGNATURE, SIGNATURE_FONT, cfg.SIGNATURE.MAX_WIDTH, w, h);
+    } else {
+      signText.style.display = "none";
+    }
   }
 
   function loadImage(n) {
@@ -235,6 +283,8 @@
 
   img.addEventListener("load", positionText);
   window.addEventListener("resize", positionText);
+  // Reposiciona quando a fonte da assinatura terminar de carregar (medidas mudam)
+  document.fonts.load("40px " + SIGNATURE_FONT).then(positionText).catch(() => {});
 
   document.getElementById("btn1").addEventListener("click", () => loadImage(1));
   document.getElementById("btn2").addEventListener("click", () => loadImage(2));
@@ -248,10 +298,16 @@
     nameInput.blur(); // fecha o teclado no celular
   });
 
-  saveBtn.addEventListener("click", () => {
+  saveBtn.addEventListener("click", async () => {
     panel.style.display = "none";
 
     const cfg = IMAGES[current];
+
+    // Garante que a fonte da assinatura está carregada antes de desenhar no canvas
+    if (cfg.SIGNATURE) {
+      try { await document.fonts.load("40px " + SIGNATURE_FONT, appliedText); } catch (e) {}
+    }
+
     const w = img.naturalWidth;
     const h = img.naturalHeight;
     const canvas = document.createElement("canvas");
@@ -259,13 +315,10 @@
     canvas.height = h;
     const ctx = canvas.getContext("2d");
 
+    // Só a imagem do certificado + textos (fundo, estrelas e link não entram)
     ctx.drawImage(img, 0, 0, w, h);
-    const size = fittedSize(appliedText, cfg.FONT_SIZE * w, MAX_TEXT_WIDTH * w);
-    ctx.font = size + "px " + FONT_FAMILY;
-    ctx.fillStyle = cfg.COLOR;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(appliedText, cfg.X * w, cfg.Y * h);
+    drawText(ctx, cfg, FONT_FAMILY, MAX_TEXT_WIDTH, w, h);
+    if (cfg.SIGNATURE) drawText(ctx, cfg.SIGNATURE, SIGNATURE_FONT, cfg.SIGNATURE.MAX_WIDTH, w, h);
 
     try {
       canvas.toBlob((blob) => {
