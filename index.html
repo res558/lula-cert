@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Certificado Exército do Lula</title>
+<!-- Prévia do link no WhatsApp/Facebook/X (endereços precisam ser completos) -->
+<meta name="description" content="Faça o seu certificado do Exército do Lula com o seu nome. Grátis, em segundos.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="https://res558.github.io/lula-cert/">
+<meta property="og:title" content="Certificado Exército do Lula">
+<meta property="og:description" content="Faça o seu certificado com o seu nome. Grátis, em segundos.">
+<meta property="og:image" content="https://res558.github.io/lula-cert/og-image.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Mrs+Saint+Delafield&display=swap" rel="stylesheet">
@@ -24,9 +36,9 @@
   const FONT_FAMILY = "Georgia, 'Times New Roman', serif";
   const MAX_CHARS = 60;
   const MAX_TEXT_WIDTH = 0.80; // texto nunca passa de 80% da largura da imagem (reduz a fonte se precisar)
-  const DOWNLOAD_NAME = "certificado.png";
+  const DOWNLOAD_PREFIX = "certificado"; // arquivo salvo: certificado-maria-da-silva.png
   const RESTORE_PANEL_AFTER_SAVE = true; // false = painel fica escondido depois de salvar
-  const SHARE_TEXT = "Faça o seu certificado:"; // texto que vai junto com o link ao compartilhar
+  const SHARE_TEXT = "Faça o seu certificado do Exército do Lula:"; // texto que vai junto com o link ao compartilhar
 
   // Estrelas do fundo
   const STAR_COUNT = 15;
@@ -140,7 +152,36 @@
     touch-action: manipulation;
   }
   button:disabled { cursor: not-allowed; opacity: 0.5; }
-  label { display: block; margin-bottom: 6px; }
+  button.selected { background: #000; color: #fff; } /* modelo escolhido */
+  label { display: block; margin-bottom: 6px; font-weight: bold; }
+  .note { margin: 8px 0 0; font-size: 12px; color: #555; }
+  #inAppTip { display: none; color: #000; }
+
+  /* Tela cheia com o certificado pronto (celular sem menu de compartilhar) */
+  #viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 18px;
+    color: #fff;
+  }
+  #viewer[hidden] { display: none; }
+  #viewer p { margin: 0; font-weight: bold; }
+  #viewerImg {
+    max-width: 100%;
+    max-height: calc(100dvh - 130px);
+    object-fit: contain;
+    -webkit-touch-callout: default;
+  }
   input[type=text] {
     font-size: 16px; /* 16px evita zoom automático no iPhone */
     padding: 6px;
@@ -183,21 +224,30 @@
         <a data-net="telegram" title="Telegram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M15 10l-4 4l6 6l4-16l-18 7l4 2l2 6l3-4"/></svg></a>
         <a data-net="more" href="#" title="Mais opções"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.7 10.7l6.6-3.4M8.7 13.3l6.6 3.4"/></svg></a>
       </div>
-      <h2>Escolha seu certificado</h2>
+      <h2>1. Escolha o modelo</h2>
       <div class="row">
-        <button id="btn1">1</button>
+        <button id="btn1" class="selected">1</button>
         <button id="btn2">2</button>
         <button id="btn3">3</button>
       </div>
-      <label for="nameInput">Escreva aqui seu nome</label>
+      <label for="nameInput">2. Digite seu nome</label>
       <div class="row">
-        <input type="text" id="nameInput" autocomplete="name" enterkeyhint="done">
+        <input type="text" id="nameInput" autocomplete="name" autocapitalize="words" enterkeyhint="done" placeholder="Ex.: Maria da Silva">
       </div>
-      <button data-goatcounter-click="salvar-imagem" id="saveBtn" disabled>Salvar imagem</button>
+      <button data-goatcounter-click="salvar-imagem" id="saveBtn" disabled>3. Salvar imagem</button>
+      <p class="note">Seu nome fica só no seu aparelho. Nada é enviado.</p>
+      <p class="note" id="inAppTip">Se não salvar, toque em ⋮ ou ••• e escolha "Abrir no navegador".</p>
 	  <br/>
 	  <a id="feedback" href="https://github.com/res558/lula-cert/issues" target="_blank" rel="noopener">Sugestões e pedidos aqui</a>
     </div>
   </div>
+</div>
+
+<!-- Certificado pronto em tela cheia: fallback para celulares sem menu de compartilhar -->
+<div id="viewer" hidden>
+  <p>Toque e segure na imagem para salvar</p>
+  <img id="viewerImg" alt="Seu certificado">
+  <button id="viewerClose">Fechar</button>
 </div>
 
 <script>
@@ -304,12 +354,16 @@
   function loadImage(n) {
     current = n;
     img.src = IMAGES[n].src;
+    // Destaca o botão do modelo escolhido
+    Object.keys(IMAGES).forEach((i) => {
+      document.getElementById("btn" + i).classList.toggle("selected", Number(i) === n);
+    });
   }
 
-  img.addEventListener("load", positionText);
+  img.addEventListener("load", () => { positionText(); schedulePrepare(); });
   window.addEventListener("resize", positionText);
   // Reposiciona quando a fonte da assinatura terminar de carregar (medidas mudam)
-  document.fonts.load("40px " + SIGNATURE_FONT).then(positionText).catch(() => {});
+  document.fonts.load("40px " + SIGNATURE_FONT).then(() => { positionText(); schedulePrepare(); }).catch(() => {});
 
   document.getElementById("btn1").addEventListener("click", () => loadImage(1));
   document.getElementById("btn2").addEventListener("click", () => loadImage(2));
@@ -321,49 +375,125 @@
     nameText.textContent = appliedText;
     positionText();
     saveBtn.disabled = appliedText.trim() === "";
+    schedulePrepare();
   }
   nameInput.addEventListener("input", applyName);
   // Enter / "OK" no celular: fecha o teclado
   nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") nameInput.blur(); });
 
-  saveBtn.addEventListener("click", async () => {
-    panel.style.display = "none";
+  // ===== Salvar =====
+  // Celular: abre o menu de compartilhar com a própria imagem (Salvar na galeria, WhatsApp, Instagram...).
+  //          Se o menu não existir ou for bloqueado: mostra a imagem em tela cheia para "tocar e segurar".
+  // PC: baixa o arquivo, como antes.
+  const IS_PHONE = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  const IN_APP = /FBAN|FBAV|FB_IAB|FBIOS|Instagram/i.test(navigator.userAgent); // navegador do Facebook/Instagram
+  if (IN_APP) document.getElementById("inAppTip").style.display = "block";
 
+  const viewer = document.getElementById("viewer");
+  const viewerImg = document.getElementById("viewerImg");
+  document.getElementById("viewerClose").addEventListener("click", () => {
+    viewer.hidden = true;
+    viewerImg.removeAttribute("src");
+  });
+
+  // "Maria da Silva" -> certificado-maria-da-silva.png
+  function fileName() {
+    const slug = appliedText.normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+    return DOWNLOAD_PREFIX + (slug ? "-" + slug : "") + ".png";
+  }
+
+  // Só a imagem do certificado + textos (fundo, estrelas e links não entram)
+  async function buildCanvas() {
     const cfg = IMAGES[current];
-
-    // Garante que a fonte da assinatura está carregada antes de desenhar no canvas
+    if (!img.complete) await new Promise((r) => img.addEventListener("load", r, { once: true }));
     if (cfg.SIGNATURE) {
       try { await document.fonts.load("40px " + SIGNATURE_FONT, appliedText); } catch (e) {}
     }
-
     const w = img.naturalWidth;
     const h = img.naturalHeight;
     const canvas = document.createElement("canvas");
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext("2d");
-
-    // Só a imagem do certificado + textos (fundo, estrelas e link não entram)
     ctx.drawImage(img, 0, 0, w, h);
     drawText(ctx, cfg, FONT_FAMILY, MAX_TEXT_WIDTH, w, h);
     if (cfg.SIGNATURE) drawText(ctx, cfg.SIGNATURE, SIGNATURE_FONT, cfg.SIGNATURE.MAX_WIDTH, w, h);
+    return canvas;
+  }
 
+  function canvasToBlob(canvas) {
+    return new Promise((resolve, reject) => {
+      try { canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob"))), "image/png"); }
+      catch (e) { reject(e); }
+    });
+  }
+
+  // Celular: deixa a imagem pronta ANTES do clique. O menu de compartilhar só abre
+  // se for chamado logo depois do toque (no iPhone é ~1 segundo), sem tempo para gerar o PNG.
+  let ready = null; // { key, file }
+  let prepTimer;
+  const currentKey = () => current + "|" + appliedText;
+  function schedulePrepare() {
+    if (!IS_PHONE || !navigator.canShare) return;
+    ready = null;
+    clearTimeout(prepTimer);
+    if (appliedText.trim() === "") return;
+    prepTimer = setTimeout(async () => {
+      const key = currentKey();
+      try {
+        const blob = await canvasToBlob(await buildCanvas());
+        if (key === currentKey()) ready = { key, file: new File([blob], fileName(), { type: "image/png" }) };
+      } catch (e) {}
+    }, 400);
+  }
+
+  function saved(mode) {
+    window.goatcounter?.count({ path: "download-ok-cert" + current, title: "Download cert " + current, event: true });
+    window.goatcounter?.count({ path: "save-" + mode, title: "Salvar via " + mode, event: true });
+    if (!RESTORE_PANEL_AFTER_SAVE) panel.style.display = "none";
+  }
+
+  async function showViewer() {
+    viewerImg.src = (await buildCanvas()).toDataURL("image/png");
+    viewer.hidden = false;
+    saved("viewer");
+  }
+
+  async function downloadFile() {
+    const url = URL.createObjectURL(await canvasToBlob(await buildCanvas()));
+    const a = document.createElement("a");
+    a.download = fileName();
+    a.href = url;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    saved("download");
+  }
+
+  saveBtn.addEventListener("click", async () => {
+    if (appliedText.trim() === "") return;
     try {
-      canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.download = DOWNLOAD_NAME;
-        a.href = url;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-        if (RESTORE_PANEL_AFTER_SAVE) panel.style.display = "block";
-        window.goatcounter?.count({ path: 'download-ok-cert' + current, title: 'Download cert ' + current, event: true });
-      }, "image/png");
+      if (!IS_PHONE) return await downloadFile(); // PC: igual a antes
+
+      let file = ready && ready.key === currentKey() ? ready.file : null;
+      if (!file && navigator.canShare) {
+        file = new File([await canvasToBlob(await buildCanvas())], fileName(), { type: "image/png" });
+      }
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] });
+          saved("share");
+        } catch (e) {
+          if (e.name !== "AbortError") await showViewer(); // bloqueado: tela cheia
+          // AbortError = a pessoa só fechou o menu
+        }
+        return;
+      }
+      await showViewer(); // celular sem menu de compartilhar
     } catch (e) {
       alert("Não foi possível salvar. Abra a página por um servidor (http://), não por file://.");
-      if (RESTORE_PANEL_AFTER_SAVE) panel.style.display = "block";
     }
   });
 
