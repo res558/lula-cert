@@ -26,6 +26,7 @@
   const MAX_TEXT_WIDTH = 0.80; // texto nunca passa de 80% da largura da imagem (reduz a fonte se precisar)
   const DOWNLOAD_NAME = "certificado.png";
   const RESTORE_PANEL_AFTER_SAVE = true; // false = painel fica escondido depois de salvar
+  const SHARE_TEXT = "Faça o seu certificado:"; // texto que vai junto com o link ao compartilhar
 
   // Estrelas do fundo
   const STAR_COUNT = 15;
@@ -106,12 +107,29 @@
     box-sizing: border-box;
     background: #ffffff;
     border: 2px solid #000;
-    padding: 20px;
+    padding: 32px 20px 20px;
     text-align: center;
     line-height: normal;
     display: none;
   }
   #panel h2 { margin: 0 0 12px; font-size: 20px; }
+
+  /* Compartilhar: ícones de linha no canto superior direito do painel */
+  #share {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    gap: 2px;
+    line-height: 0;
+  }
+  #share a { display: block; padding: 3px; color: #000; }
+  #share a:hover, #share a:focus-visible { color: #ff0000; }
+  #share svg {
+    width: 18px; height: 18px;
+    fill: none; stroke: currentColor; stroke-width: 1.5;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
   .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 14px; }
   button {
     font-size: 16px;
@@ -141,8 +159,9 @@
       width: 100%;
       transform: none;
       border-width: 2px 0 0 0;
-      padding: 14px;
+      padding: 34px 14px 14px;
     }
+    #share svg { width: 22px; height: 22px; } /* maior para o dedo */
     #panel h2 { font-size: 18px; margin-bottom: 10px; }
     .row { margin-bottom: 10px; }
   }
@@ -156,6 +175,14 @@
     <div id="nameText"></div>
     <div id="signText"></div>
     <div id="panel">
+      <div id="share" aria-label="Compartilhar">
+        <a data-net="whatsapp" title="WhatsApp" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></svg></a>
+        <a data-net="facebook" title="Facebook" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M7 10v4h3v7h4v-7h3l1-4h-4V8a1 1 0 0 1 1-1h3V3h-3a5 5 0 0 0-5 5v2H7"/></svg></a>
+        <a data-net="instagram" href="#" title="Instagram"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3.5"/><path d="M16.5 7.5v.01"/></svg></a>
+        <a data-net="x" title="X" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M4 4l11.733 16H20L8.267 4z"/><path d="M4 20l6.768-6.768m2.46-2.46L20 4"/></svg></a>
+        <a data-net="telegram" title="Telegram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M15 10l-4 4l6 6l4-16l-18 7l4 2l2 6l3-4"/></svg></a>
+        <a data-net="more" href="#" title="Mais opções"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.7 10.7l6.6-3.4M8.7 13.3l6.6 3.4"/></svg></a>
+      </div>
       <h2>Escolha seu certificado</h2>
       <div class="row">
         <button id="btn1">1</button>
@@ -337,6 +364,33 @@
       alert("Não foi possível salvar. Abra a página por um servidor (http://), não por file://.");
       if (RESTORE_PANEL_AFTER_SAVE) panel.style.display = "block";
     }
+  });
+
+  // Compartilhar: monta os links com o endereço desta página
+  const shareUrl = location.origin + location.pathname;
+  const enc = encodeURIComponent;
+  const SHARE_LINKS = {
+    whatsapp: "https://wa.me/?text=" + enc(SHARE_TEXT + " " + shareUrl),
+    facebook: "https://www.facebook.com/sharer/sharer.php?u=" + enc(shareUrl),
+    x:        "https://twitter.com/intent/tweet?text=" + enc(SHARE_TEXT) + "&url=" + enc(shareUrl),
+    telegram: "https://t.me/share/url?url=" + enc(shareUrl) + "&text=" + enc(SHARE_TEXT)
+  };
+  document.querySelectorAll("#share a").forEach((a) => {
+    const net = a.dataset.net;
+    if (SHARE_LINKS[net]) a.href = SHARE_LINKS[net];
+    a.addEventListener("click", async (e) => {
+      window.goatcounter?.count({ path: "share-" + net, title: "Share " + net, event: true });
+      if (net !== "more" && net !== "instagram") return;
+      e.preventDefault();
+      // Celular: abre o menu nativo do sistema (lá aparecem Instagram, e-mail, etc.)
+      if (navigator.share) {
+        try { await navigator.share({ text: SHARE_TEXT, url: shareUrl }); } catch (err) {}
+        return;
+      }
+      // PC: copia o link; no Instagram também abre o site (ele não tem link de compartilhar)
+      if (net === "instagram") window.open("https://www.instagram.com/", "_blank", "noopener");
+      try { await navigator.clipboard.writeText(shareUrl); alert("Link copiado!"); } catch (err) {}
+    });
   });
 
   // Start: load image 1, show panel only after everything is loaded
